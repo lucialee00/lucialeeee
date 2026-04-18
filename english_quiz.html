@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>English Quiz</title>
+  <style>
+    :root {
+      --pri: #4f46e5; --pri-light: #eef2ff; --pri-dark: #3730a3;
+      --pur: #7c3aed; --pur-light: #f5f3ff;
+      --ok: #16a34a;  --ok-light: #dcfce7;
+      --err: #dc2626; --err-light: #fee2e2;
+      --warn-light: #fef3c7;
+      --gray: #6b7280; --gray-light: #f3f4f6;
+      --border: #e5e7eb; --card: #fff; --bg: #f9fafb;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: #111827; min-height: 100vh; }
+
+    /* ── HEADER ── */
+    header { background: linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; padding:28px 24px 22px; text-align:center; }
+    header h1 { font-size:1.6rem; font-weight:700; }
+    header p  { margin-top:6px; opacity:.85; font-size:.92rem; }
+
+    /* ── UNIT TABS ── */
+    .unit-nav { display:flex; justify-content:center; gap:10px; padding:14px 16px; background:#fff; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+    .utab { padding:8px 22px; border-radius:999px; border:2px solid var(--pri); background:#fff; color:var(--pri); font-weight:600; cursor:pointer; font-size:.88rem; transition:all .15s; }
+    .utab.active,.utab:hover { background:var(--pri); color:#fff; }
+
+    /* ── LAYOUT ── */
+    main { max-width:880px; margin:0 auto; padding:22px 16px 60px; }
+    .unit { display:none; } .unit.active { display:block; }
+
+    /* ── SUB TABS ── */
+    .sub-nav { display:flex; gap:6px; background:#fff; border:1px solid var(--border); border-radius:12px; padding:6px; margin-bottom:20px; }
+    .stab { flex:1; padding:10px; border-radius:8px; border:none; background:transparent; color:var(--gray); font-weight:600; cursor:pointer; font-size:.9rem; transition:all .15s; }
+    .stab.active { background:var(--pri); color:#fff; }
+    .stab:hover:not(.active) { background:var(--gray-light); color:#374151; }
+
+    /* ── SECTION ── */
+    .section { display:none; } .section.active { display:block; }
+
+    /* ── CONTROLS BAR ── */
+    .controls { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+    .btn { padding:9px 20px; border-radius:8px; border:none; font-size:.88rem; font-weight:600; cursor:pointer; transition:opacity .15s; }
+    .btn:hover { opacity:.85; }
+    .btn-pri  { background:var(--pri); color:#fff; }
+    .btn-sec  { background:var(--gray-light); color:#374151; border:1px solid var(--border); }
+    .btn-warn { background:var(--warn-light); color:#92400e; border:1px solid #fde68a; }
+
+    /* ── SCORE ── */
+    .score-box { background:#fff; border:2px solid var(--pri); border-radius:12px; padding:14px 20px; margin-bottom:20px; font-weight:600; color:var(--pri); text-align:center; display:none; }
+    .score-box span { font-size:1.3rem; }
+
+    /* ── WORD ORDER CARD ── */
+    .wcard { background:#fff; border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:16px; transition:box-shadow .2s; }
+    .wcard:hover { box-shadow:0 2px 10px rgba(0,0,0,.07); }
+    .wcard.title-card { border-left:4px solid var(--pri); }
+    .q-num { font-size:.74rem; font-weight:700; color:var(--pri); letter-spacing:.5px; margin-bottom:5px; }
+    .q-ko  { font-size:.94rem; color:#374151; line-height:1.55; margin-bottom:12px; }
+
+    /* chip areas */
+    .area-label { font-size:.72rem; font-weight:700; color:var(--gray); letter-spacing:.5px; text-transform:uppercase; margin-bottom:5px; }
+    .word-bank {
+      min-height:46px; background:var(--pri-light); border-radius:8px;
+      padding:8px; display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;
+    }
+    .answer-area {
+      min-height:46px; background:var(--gray-light);
+      border:2px dashed var(--border); border-radius:8px;
+      padding:8px; display:flex; flex-wrap:wrap; gap:6px;
+      margin-bottom:12px; transition:border-color .15s, background .15s;
+    }
+    .answer-area.filled  { border-style:solid; border-color:#d1d5db; }
+    .answer-area.correct { background:var(--ok-light); border:2px solid var(--ok); }
+    .answer-area.wrong   { background:var(--err-light); border:2px solid var(--err); }
+    .placeholder { color:#9ca3af; font-size:.84rem; align-self:center; padding:2px 4px; }
+
+    /* chips */
+    .chip {
+      padding:6px 12px; border-radius:6px; border:none;
+      font-size:.87rem; font-family:inherit; cursor:pointer;
+      font-weight:500; transition:all .12s; user-select:none; line-height:1.4;
+    }
+    .bank-chip {
+      background:#fff; color:var(--pri-dark);
+      border:1.5px solid #c7d2fe; box-shadow:0 1px 3px rgba(0,0,0,.07);
+    }
+    .bank-chip:hover { background:var(--pri); color:#fff; border-color:var(--pri); transform:translateY(-1px); }
+    .ans-chip  { background:var(--pri); color:#fff; border:1.5px solid var(--pri); }
+    .ans-chip:hover { background:var(--err); border-color:var(--err); }
+    .ans-chip::after { content:' ×'; opacity:.65; font-size:.75rem; }
+
+    /* card bottom */
+    .card-btns { display:flex; gap:8px; }
+    .chk-btn { padding:8px 18px; background:var(--pri); color:#fff; border:none; border-radius:7px; font-size:.85rem; font-weight:600; cursor:pointer; transition:opacity .15s; }
+    .chk-btn:hover { opacity:.88; }
+    .clr-btn { padding:8px 14px; background:var(--gray-light); color:var(--gray); border:1px solid var(--border); border-radius:7px; font-size:.85rem; font-weight:600; cursor:pointer; }
+
+    .w-feedback { margin-top:8px; font-size:.83rem; font-weight:600; display:none; }
+    .w-feedback.ok  { color:var(--ok); display:block; }
+    .w-feedback.err { color:var(--err); display:block; }
+    .w-reveal { margin-top:8px; font-size:.82rem; color:var(--ok); background:var(--ok-light); border-radius:6px; padding:8px 12px; display:none; font-family:'Courier New',monospace; }
+    .w-reveal.show { display:block; }
+
+    /* ── GRAMMAR CARD ── */
+    .gcard { background:#fff; border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; }
+    .g-num { font-size:.74rem; font-weight:700; color:var(--pur); letter-spacing:.5px; margin-bottom:5px; }
+    .g-ko  { font-size:.87rem; color:var(--gray); margin-bottom:8px; }
+    .g-sent {
+      font-size:.97rem; color:#111827; font-weight:500; line-height:1.7;
+      padding:10px 14px; background:var(--pur-light);
+      border-radius:8px; border-left:3px solid var(--pur); margin-bottom:14px;
+    }
+    .blank {
+      display:inline-block; min-width:72px; border-bottom:2.5px solid var(--pur);
+      text-align:center; color:var(--pur); font-weight:700; padding:0 4px;
+    }
+    .opts { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+    .opt {
+      display:flex; align-items:center; gap:9px;
+      padding:9px 14px; border:1.5px solid var(--border); border-radius:8px;
+      cursor:pointer; font-size:.9rem; transition:all .12s; user-select:none;
+    }
+    .opt:hover { border-color:var(--pur); background:var(--pur-light); }
+    .opt.sel   { border-color:var(--pur); background:var(--pur-light); color:#5b21b6; font-weight:600; }
+    .opt.ok-opt  { border-color:var(--ok); background:var(--ok-light); color:var(--ok); font-weight:600; }
+    .opt.err-opt { border-color:var(--err); background:var(--err-light); color:var(--err); font-weight:600; }
+    .opt-key {
+      width:24px; height:24px; border-radius:50%;
+      background:var(--gray-light); display:flex; align-items:center; justify-content:center;
+      font-size:.75rem; font-weight:700; flex-shrink:0;
+    }
+    .opt.sel .opt-key     { background:var(--pur); color:#fff; }
+    .opt.ok-opt .opt-key  { background:var(--ok);  color:#fff; }
+    .opt.err-opt .opt-key { background:var(--err); color:#fff; }
+    .g-feedback { font-size:.83rem; font-weight:600; margin-bottom:5px; }
+    .g-feedback.ok  { color:var(--ok); }
+    .g-feedback.err { color:var(--err); }
+    .g-expl { font-size:.82rem; color:#374151; background:var(--warn-light); border-radius:6px; padding:8px 12px; display:none; margin-top:6px; border-left:3px solid #f59e0b; }
+    .g-expl.show { display:block; }
+
+    @media(max-width:500px){
+      .opts { grid-template-columns:1fr; }
+      header h1 { font-size:1.25rem; }
+      .utab { font-size:.78rem; padding:7px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>English Quiz</h1>
+  <p>단어 배열 &amp; 어법 선택 퀴즈</p>
+</header>
+
+<nav class="unit-nav">
+  <button class="utab active" onclick="switchUnit(1)">1과 · Live Freely and Happily Ever After!</button>
+  <button class="utab"        onclick="switchUnit(2)">2과 · Text Better, Communicate Better!</button>
+</nav>
+
+<main>
+  <div id="unit1" class="unit active">
+    <div class="sub-nav">
+      <button class="stab active" id="st1-order"   onclick="switchType(1,'order')">단어 배열 퀴즈</button>
+      <button class="stab"        id="st1-grammar" onclick="switchType(1,'grammar')">어법 선택 퀴즈</button>
+    </div>
+    <div id="u1-order"   class="section active"></div>
+    <div id="u1-grammar" class="section"></div>
+  </div>
+
+  <div id="unit2" class="unit">
+    <div class="sub-nav">
+      <button class="stab active" id="st2-order"   onclick="switchType(2,'order')">단어 배열 퀴즈</button>
+      <button class="stab"        id="st2-grammar" onclick="switchType(2,'grammar')">어법 선택 퀴즈</button>
+    </div>
+    <div id="u2-order"   class="section active"></div>
+    <div id="u2-grammar" class="section"></div>
+  </div>
+</main>
+
+<script>
+// ===================================================================
+// DATA
+// ===================================================================
+
+const wordData = {
+  1: [
+    { num:"Title", ko:"자유롭고 행복하게 영원히 살렴!", words:"Ever / and / Freely / Happily / Live / After!", answer:"Live Freely and Happily Ever After!" },
+    { num:"01", ko:"여러분은 십 대로서 NGO에서 활동할 수 있습니다.", words:"NGOs / can / a / teenager. / work / You / as / with", answer:"You can work with NGOs as a teenager." },
+    { num:"02", ko:"그것은 사회적 문제에 대해 배우고 세상을 더 좋게 만드는 좋은 방법입니다.", words:"way / It / learn / make / is / great / a / issues / about / world / to / better. / social / and / the", answer:"It is a great way to learn about social issues and make the world better." },
+    { num:"03", ko:"관심이 있나요?", words:"interested? / you / Are", answer:"Are you interested?" },
+    { num:"04", ko:"그러면, 아래에 있는 인호의 블로그를 읽어 보세요.", words:"below. / blog / Inho's / read / Then, / first", answer:"Then, read Inho's blog below first." },
+    { num:"05", ko:"저는 제주도에서 자라서 돌고래를 볼 기회가 많았습니다.", words:"Jeju-do, / I / in / grew / up / many / to / see / had / I / so / dolphins. / chances", answer:"I grew up in Jeju-do, so I had many chances to see dolphins." },
+    { num:"06", ko:"그러다 저는 많은 돌고래가 위험에 처해 있다는 것을 알게 되었습니다.", words:"are / learned / in / that / many / dolphins / I / danger. / Then,", answer:"Then, I learned that many dolphins are in danger." },
+    { num:"07", ko:"어떤 것들은 심지어 멸종 위기에 처해 있습니다.", words:"endangered. / are / Some / even", answer:"Some are even endangered." },
+    { num:"08", ko:"저는 제가 무언가를 해야 한다고 생각했습니다.", words:"something. / I / should / thought / I / do", answer:"I thought I should do something." },
+    { num:"09", ko:"그래서 인터넷을 검색해 NGO인 'Dolphin Lovers'를 찾았습니다.", words:"searched / Internet / the / So, / and / I / found / NGO, / an / Dolphin / Lovers.", answer:"So, I searched the Internet and found an NGO, Dolphin Lovers." },
+    { num:"10", ko:"그곳은 해변을 청소하고 돌고래를 돕는 것과 같은 다양한 활동을 합니다.", words:"activities / various / such / It / cleaning / as / does / and / up / helping / beaches / dolphins.", answer:"It does various activities such as cleaning up beaches and helping dolphins." },
+    { num:"11", ko:"생각 끝에, 저는 오늘 그곳에 가입했습니다.", words:"joined / today. / I / thought, / some / After / it", answer:"After some thought, I joined it today." },
+    { num:"12", ko:"많은 돌고래가 플라스틱 쓰레기와 그물 때문에 병들거나 심지어 죽기도 해서 해변을 청소하는 것은 중요합니다.", words:"get / dolphins / die / sick / because / Many / or / of / even / waste / and / plastic / nets, / fishing / so / important. / is / cleaning / up / beaches", answer:"Many dolphins get sick or even die because of plastic waste and fishing nets, so cleaning up beaches is important." },
+    { num:"13", ko:"오늘 해변 정화 파티가 있었고, 저는 그곳에 참여했습니다.", words:"today, / beach / cleanup / was / a / There / party / and / in / I / part / took / it.", answer:"There was a beach cleanup party today, and I took part in it." },
+    { num:"14", ko:"해변을 청소하는 것은 쉽지 않았지만, 저는 즐거웠습니다.", words:"cleaning / beach / up / was / easy, / but / not / enjoyed / I / it. / The", answer:"Cleaning up the beach was not easy, but I enjoyed it." },
+    { num:"15", ko:"오, 저는 그곳에서 수미 이모를 보았습니다.", words:"there. / I / Aunt / saw / Sumi / Oh,", answer:"Oh, I saw Aunt Sumi there." },
+    { num:"16", ko:"그녀 또한 'Dolphin Lovers'의 회원입니다.", words:"also / of / a / member / She / is / Dolphin / Lovers.", answer:"She is also a member of Dolphin Lovers." },
+    { num:"17", ko:"세상 참 좁네요!", words:"world! / small / a / What", answer:"What a small world!" },
+    { num:"18", ko:"오늘 오후에 저는 제주도의 한 수족관에 있는 두 마리의 돌고래인 한라와 올레를 위한 훈련 수업에 참여했습니다.", words:"training / afternoon, / I / part / took / in / a / for / class / Halla / and / Olle, / This / dolphins / two / in / Jeju-do. / aquarium / an", answer:"This afternoon, I took part in a training class for Halla and Olle, two dolphins in an aquarium in Jeju-do." },
+    { num:"19", ko:"'Dolphin Lovers'의 최근 프로젝트는 그들을 바다로 돌려보내는 것입니다.", words:"Dolphin / return / sea. / latest / of / Lovers / is / to / them / project / to / the / The", answer:"The latest project of Dolphin Lovers is to return them to the sea." },
+    { num:"20", ko:"이것을 위해, 한라와 올레는 먼저 몇 가지 기술을 배울 필요가 있습니다.", words:"and / first / some / need / to / Olle / learn / skills. / Halla / For / this,", answer:"For this, Halla and Olle first need to learn some skills." },
+    { num:"21", ko:"그들은 야생에서 살아남기 위해 그것들이 필요할 것입니다.", words:"will / to / need / survive / in / the / wild. / They / them", answer:"They will need them to survive in the wild." },
+    { num:"22", ko:"저는 정말로 그 프로젝트의 일원이 되고 싶었습니다.", words:"to / be / project. / the / of / part / I / wanted / really", answer:"I really wanted to be part of the project." },
+    { num:"23", ko:"다행히도, 저에게 기회가 왔습니다.", words:"got / chance. / I / the / Luckily,", answer:"Luckily, I got the chance." },
+    { num:"24", ko:"저는 오늘 훈련 수업에서 단지 심부름만 했을 뿐이지만, 그 경험은 저를 매우 설레게 했습니다.", words:"errands / ran / training / some / class / in / just / today, / the / the / experience / but / me / so / made / excited. / I", answer:"I just ran some errands in the training class today, but the experience made me so excited." },
+    { num:"25", ko:"오늘 한라와 올레가 바다로 돌아갔습니다.", words:"went / and / to / Halla / Today, / sea. / back / the / Olle", answer:"Today, Halla and Olle went back to the sea." },
+    { num:"26", ko:"작은 기념식이 있었고, 'Dolphin Lovers'의 모든 회원들이 그곳에 있었습니다.", words:"ceremony, / and / all / members / the / of / was / small / a / There / Dolphin / Lovers / there. / were", answer:"There was a small ceremony, and all the members of Dolphin Lovers were there." },
+    { num:"27", ko:"그 기념식은 우리를 꽤 감동하게 만들었습니다.", words:"emotional. / us / quite / ceremony / made / The", answer:"The ceremony made us quite emotional." },
+    { num:"28", ko:"사실, 저는 약간 울었습니다.", words:"I / little. / fact, / a / cried / In", answer:"In fact, I cried a little." },
+    { num:"29", ko:"이제 더 이상 한라와 올레를 볼 수 없네요!", words:"anymore! / Halla / and / Olle / see / cannot / Now / I", answer:"Now I cannot see Halla and Olle anymore!" },
+    { num:"30", ko:"하지만, 저는 동시에 매우 행복했습니다.", words:"happy / I / very / same / was / at / the / However, / time.", answer:"However, I was very happy at the same time." },
+    { num:"31", ko:"수족관에서의 10년 동안의 힘든 생활 끝에, 이제 온 바다가 그들의 집입니다.", words:"years / 10 / hard / life / in / an / aquarium, / after / now / all / home. / their / is / sea / the / of", answer:"After 10 years of hard life in an aquarium, now all the sea is their home." },
+    { num:"32", ko:"\"자유롭고 행복하게 영원히 살렴!\" 나는 소리치며 그들에게 작별의 손을 흔들었습니다.", words:"ever / happily / after!\" / and / freely / shouted / \"Live / waved / to / I / goodbye / them.", answer:"\"Live freely and happily ever after!\" I shouted and waved goodbye to them." },
+  ],
+  2: [
+    { num:"Title", ko:"더 잘 문자하고, 더 잘 소통하라!", words:"Better, / Text / Better! / Communicate", answer:"Text Better, Communicate Better!" },
+    { num:"01", ko:"문자 메시지는 요즘 많은 사람들, 특히 십 대들에게 주요 소통 수단입니다.", words:"is / way / main / communication / Texting / the / of / for / people / these / many / especially / days, / teenagers. / for", answer:"Texting is the main way of communication for many people these days, especially for teenagers." },
+    { num:"02", ko:"문자 메시지를 통해 더 잘 소통하는 방법을 알고 싶나요?", words:"want / Do / know / you / how / you / communicate / can / texting? / better / through", answer:"Do you want to know how you can communicate better through texting?" },
+    { num:"03", ko:"여기 몇 가지 유용한 팁이 있습니다.", words:"useful / are / Here / tips. / some", answer:"Here are some useful tips." },
+    { num:"04", ko:"여러분은 누구와 이야기하고 있는지 알아야 합니다.", words:"know / need / to / who / are / you / You / talking / to.", answer:"You need to know who you are talking to." },
+    { num:"05", ko:"Henry는 방금 그의 어머니에게 다음과 같은 문자 메시지를 보냈습니다.", words:"sent / text / his / just / following / the / Henry / message / mother. / to", answer:"Henry just sent the following text message to his mother." },
+    { num:"06", ko:"Henry: 엄마, 조금만 더 기다려 주세요. BRT.", words:"I / you / want / Mom, / to / wait / just / BRT. / longer. / a / little", answer:"Mom, I want you to wait just a little longer. BRT." },
+    { num:"07", ko:"Henry의 어머니가 BRT를 올바르게 이해했다고 생각하나요?", words:"think / correctly / you / Do / understood / Henry's / BRT? / mother", answer:"Do you think Henry's mother correctly understood BRT?" },
+    { num:"08", ko:"아마도 그렇지 않을 것입니다.", words:"not. / Probably", answer:"Probably not." },
+    { num:"09", ko:"친구들에게 문자를 보낼 때 BRT, JK, LOL 같은 표현을 사용할 수 있습니다.", words:"use / You / can / like / BRT, / expressions / JK, / LOL / or / when / text / you / friends. / your", answer:"You can use expressions like BRT, JK, or LOL when you text your friends." },
+    { num:"10", ko:"하지만, 선생님이나 부모님께 문자를 보낼 때는 그런 표현에 주의하세요.", words:"careful / be / However, / with / expressions / such / text / when / you / teachers / your / parents. / or", answer:"However, be careful with such expressions when you text your teachers or parents." },
+    { num:"11", ko:"그들 중 일부는 그러한 표현의 의미를 모를 수도 있다는 것을 이해해야 합니다.", words:"understand / You / need / that / of / some / them / may / to / not / know / the / meanings / expressions. / such / of", answer:"You need to understand that some of them may not know the meanings of such expressions." },
+    { num:"12", ko:"사람들이 이모티콘을 다르게 사용한다는 것을 이해해야 합니다.", words:"understand / need / that / differently. / use / people / emojis / You / to", answer:"You need to understand that people use emojis differently." },
+    { num:"13", ko:"어제, Jisu는 남동생 Jihoo에게 생일 선물을 주었습니다.", words:"gave / Jisu / a / Yesterday, / gift / to / birthday / her / little / Jihoo. / brother", answer:"Yesterday, Jisu gave a birthday gift to her little brother Jihoo." },
+    { num:"14", ko:"나중에, 그녀는 다음과 같은 문자 메시지를 받았습니다.", words:"she / Later, / got / following / text / the / message.", answer:"Later, she got the following text message." },
+    { num:"15", ko:"Jihoo: 선물 정말 좋았어. 정말 고마워.", words:"loved / I / gift. / your / a / Thanks / lot.", answer:"I loved your gift. Thanks a lot." },
+    { num:"16", ko:"\"웃는 얼굴이 하나뿐이라고? 선물을 마음에 들어 하지 않는 것 같네,\" Jisu는 생각했습니다.", words:"smiling / one / face? / Only / he / I / guess / like / didn't / gift,\" / my / thought. / Jisu", answer:"\"Only one smiling face? I guess he didn't like my gift,\" Jisu thought." },
+    { num:"17", ko:"누군가와 이야기할 때, 우리는 말뿐만 아니라 표정과 몸짓도 사용합니다.", words:"we / someone, / talk / we / with / use / not / words / When / but / also / facial / expressions / body / and / language.", answer:"When we talk with someone, we use not only words but also facial expressions and body language." },
+    { num:"18", ko:"문자 메시지에서는 대신 이모티콘을 사용합니다.", words:"use / texting, / emojis / we / In / instead.", answer:"In texting, we use emojis instead." },
+    { num:"19", ko:"때로는 작은 이모티콘 하나가 많은 말보다 더 크게 말할 수 있습니다.", words:"emoji / a / little / Sometimes, / speak / can / many / louder / words. / than", answer:"Sometimes, a little emoji can speak louder than many words." },
+    { num:"20", ko:"문제는 모든 사람이 같은 방식으로 이모티콘을 사용하지는 않는다는 것입니다.", words:"is / The / that / problem / everybody / not / emojis / uses / in / way. / same / the", answer:"The problem is that not everybody uses emojis in the same way." },
+    { num:"21", ko:"어떤 사람들은 많이 사용하기를 좋아하고, 어떤 사람들은 그렇지 않습니다.", words:"like / Some / use / to / people / them / don't. / lot, / a / and / some", answer:"Some people like to use them a lot, and some don't." },
+    { num:"22", ko:"게다가, 같은 이모티콘이 다른 사람들에게 다른 것을 의미할 수 있습니다.", words:"same / the / emojis / In / addition, / mean / different / can / things / different / to / people.", answer:"In addition, the same emojis can mean different things to different people." },
+    { num:"23", ko:"때로는 전화를 받아야 할 필요가 있습니다.", words:"need / Sometimes, / up / pick / you / to / phone. / the", answer:"Sometimes, you need to pick up the phone." },
+    { num:"24", ko:"Amy는 방금 가장 친한 친구 Nari에게서 다음과 같은 문자 메시지를 받았습니다.", words:"got / Amy / just / following / the / from / text / message / best / her / Nari. / friend", answer:"Amy just got the following text message from her best friend Nari." },
+    { num:"25", ko:"Nari: 정말로 내 뒷담화를 했어? 나한테 사과해.", words:"really / Did / you / back? / talk / my / behind / I / you / want / me. / apologize / to / to", answer:"Did you really talk behind my back? I want you to apologize to me." },
+    { num:"26", ko:"Amy는 Nari에게 문자를 보내 상황을 설명하고 싶었지만, 다시 생각했습니다.", words:"Nari / wanted / Amy / text / to / and / explain / situation, / but / she / thought / the / again.", answer:"Amy wanted to text Nari and explain the situation, but she thought again." },
+    { num:"27", ko:"\"글쎄, 이건 문자로는 너무 많은 내용이야,\" 그녀는 혼잣말을 하며 Nari에게 전화했습니다.", words:"too / this / \"Well, / is / text,\" / for / much / she / a / herself / said / to / and / called / Nari.", answer:"\"Well, this is too much for a text,\" she said to herself and called Nari." },
+    { num:"28", ko:"문자 메시지는 가벼운 상황에서는 괜찮지만, 때로는 전화를 받아야 합니다.", words:"is / Texting / casual / for / situations, / okay / sometimes, / but / you / pick / need / up / to / phone. / the", answer:"Texting is okay for casual situations, but sometimes, you need to pick up the phone." },
+    { num:"29", ko:"이는 문자를 보낼 때 오해가 쉽게 생길 수 있기 때문입니다.", words:"is / This / misunderstandings / because / easily / can / when / happen / text. / you", answer:"This is because misunderstandings can easily happen when you text." },
+    { num:"30", ko:"친구들과 민감한 문제에 대해 이야기할 필요가 있나요?", words:"need / Do / talk / you / to / about / sensitive / friends? / your / issues / with", answer:"Do you need to talk about sensitive issues with your friends?" },
+    { num:"31", ko:"그렇다면 문자를 보내지 마세요.", words:"them. / don't / Then, / text", answer:"Then, don't text them." },
+    { num:"32", ko:"대신 전화하세요.", words:"instead. / them / Call", answer:"Call them instead." },
+  ]
+};
+
+const grammarData = {
+  1: [
+    {ko:"여러분은 십 대로서 NGO에서 활동할 수 있습니다.",sent:"You can work with NGOs ___ a teenager.",opts:["for","as","like","by"],ans:1,expl:"as는 '~로서, ~의 자격으로'를 뜻하는 전치사입니다. (as a teenager = 십 대로서)"},
+    {ko:"그것은 사회적 문제에 대해 배우는 좋은 방법입니다.",sent:"It is a great way ___ about social issues.",opts:["learn","learned","to learn","learning"],ans:2,expl:"「way + to부정사」: '~하는 방법'을 나타냅니다. a way to learn = 배우는 방법"},
+    {ko:"저는 제주도에서 자라서 돌고래를 볼 기회가 많았습니다.",sent:"I grew up in Jeju-do, ___ I had many chances to see dolphins.",opts:["but","so","because","though"],ans:1,expl:"so는 '그래서, 그 결과'를 나타내는 결과의 접속사입니다."},
+    {ko:"어떤 것들은 심지어 멸종 위기에 처해 있습니다.",sent:"Some are even ___.",opts:["endanger","endangering","endangered","to endanger"],ans:2,expl:"be + 과거분사(p.p.) 형태의 수동태입니다. be endangered = 멸종 위기에 처해 있다"},
+    {ko:"그곳은 해변을 청소하는 것과 같은 다양한 활동을 합니다.",sent:"It does various activities such as ___ up beaches.",opts:["clean","cleaned","to clean","cleaning"],ans:3,expl:"「such as + 동명사(-ing)」: such as 뒤에는 명사나 동명사가 옵니다."},
+    {ko:"많은 돌고래가 플라스틱 쓰레기 때문에 죽습니다.",sent:"Many dolphins die because ___ plastic waste.",opts:["of","for","to","with"],ans:0,expl:"because of + 명사: '~ 때문에'를 나타내는 전치사구입니다."},
+    {ko:"'Dolphin Lovers'의 최근 프로젝트는 그들을 바다로 돌려보내는 것입니다.",sent:"The latest project of Dolphin Lovers is ___ them to the sea.",opts:["return","returned","returning","to return"],ans:3,expl:"「be동사 + to부정사」: 주어를 설명하는 보어 자리에 to부정사가 옵니다."},
+    {ko:"그 경험은 저를 매우 설레게 했습니다.",sent:"The experience made me so ___.",opts:["excite","excited","excitedly","exciting"],ans:1,expl:"「make + 목적어 + 형용사」: 사역동사 make 뒤에 목적격 보어로 형용사가 옵니다. excited = (사람이) 설레는"},
+    {ko:"세상 참 좁네요!",sent:"___ a small world!",opts:["How","Such","What","So"],ans:2,expl:"「What + a(n) + 형용사 + 명사!」 형태의 감탄문입니다. What a small world!"},
+    {ko:"그들은 야생에서 살아남기 위해 그것들이 필요할 것입니다.",sent:"They will need them ___ in the wild.",opts:["survive","surviving","to survive","survived"],ans:2,expl:"「need + 목적어 + to부정사」: '~가 …하도록 필요하다'는 구조입니다."},
+    {ko:"저는 제주도에서 자랐습니다.",sent:"I ___ up in Jeju-do.",opts:["grow","grown","growing","grew"],ans:3,expl:"grew는 grow의 과거형입니다. 과거의 사실을 나타낼 때 과거시제를 씁니다."},
+    {ko:"저는 제가 무언가를 해야 한다고 생각했습니다.",sent:"I thought I ___ do something.",opts:["would","will","should","shall"],ans:2,expl:"should는 '~해야 한다'는 의무/당위를 나타내는 조동사입니다."},
+    {ko:"생각 끝에, 저는 오늘 그곳에 가입했습니다.",sent:"After some ___, I joined it today.",opts:["thinking","thought","think","to think"],ans:1,expl:"after some thought: '어느 정도 생각한 후에'라는 관용 표현입니다. thought는 명사로 쓰였습니다."},
+    {ko:"해변을 청소하는 것은 쉽지 않았습니다.",sent:"Cleaning up the beach ___ not easy.",opts:["is","are","were","was"],ans:3,expl:"동명사구(Cleaning up the beach)가 주어일 때 동사는 단수 취급합니다. 과거 사실이므로 was."},
+    {ko:"그녀 또한 'Dolphin Lovers'의 회원입니다.",sent:"She is ___ a member of Dolphin Lovers.",opts:["too","also","either","neither"],ans:1,expl:"also는 긍정문에서 '~도, 또한'을 나타내는 부사입니다. (too는 문장 끝에 씁니다)"},
+    {ko:"저는 훈련 수업에 참여했습니다.",sent:"I took ___ in a training class.",opts:["place","position","part","role"],ans:2,expl:"take part in: '~에 참여하다'는 고정 표현입니다."},
+    {ko:"'Dolphin Lovers'의 최근 프로젝트는 그들을 바다로 돌려보내는 것입니다.",sent:"The latest project is to return them ___ the sea.",opts:["at","in","to","into"],ans:2,expl:"return to: '~로 돌아가다/돌려보내다'에서 to는 방향을 나타내는 전치사입니다."},
+    {ko:"한라와 올레는 먼저 몇 가지 기술을 배울 필요가 있습니다.",sent:"Halla and Olle first need to learn ___ skills.",opts:["any","much","some","few"],ans:2,expl:"some은 긍정문에서 '몇 가지, 어느 정도의'를 나타냅니다."},
+    {ko:"그들은 야생에서 살아남기 위해 그것들이 필요할 것입니다.",sent:"They will need them to survive ___ the wild.",opts:["on","at","into","in"],ans:3,expl:"in the wild: '야생에서'라는 고정 표현입니다."},
+    {ko:"저는 정말로 그 프로젝트의 일원이 되고 싶었습니다.",sent:"I ___ wanted to be part of the project.",opts:["real","reality","really","realistic"],ans:2,expl:"동사 wanted를 수식하므로 부사 really가 필요합니다. real은 형용사입니다."},
+    {ko:"다행히도, 저에게 기회가 왔습니다.",sent:"___, I got the chance.",opts:["Lucky","Luck","Luckily","Luckiness"],ans:2,expl:"문장 전체를 수식하는 부사 Luckily(다행히도)가 필요합니다."},
+    {ko:"오늘 한라와 올레가 바다로 돌아갔습니다.",sent:"Halla and Olle ___ back to the sea today.",opts:["gone","going","go","went"],ans:3,expl:"today와 함께 과거에 일어난 일을 나타내므로 went(go의 과거형)가 적절합니다."},
+    {ko:"작은 기념식이 있었습니다.",sent:"There ___ a small ceremony.",opts:["is","are","was","were"],ans:2,expl:"There was + 단수명사: '~이 있었다'의 과거형입니다. ceremony는 단수이므로 was."},
+    {ko:"그 기념식은 우리를 꽤 감동하게 만들었습니다.",sent:"The ceremony made us ___ emotional.",opts:["very","quite","much","so"],ans:1,expl:"quite는 '꽤, 상당히'를 나타내는 부사입니다. 형용사 emotional을 수식합니다."},
+    {ko:"사실, 저는 약간 울었습니다.",sent:"In ___, I cried a little.",opts:["truth","real","fact","actually"],ans:2,expl:"In fact: '사실은, 실제로'라는 고정 부사 표현입니다."},
+    {ko:"이제 더 이상 한라와 올레를 볼 수 없네요!",sent:"Now I ___ see Halla and Olle anymore!",opts:["can","should","must","cannot"],ans:3,expl:"cannot은 '~할 수 없다'는 불가능을 나타냅니다. anymore(더 이상)와 함께 씁니다."},
+    {ko:"하지만, 저는 동시에 매우 행복했습니다.",sent:"I was very happy at the ___ time.",opts:["very","same","exact","equal"],ans:1,expl:"at the same time: '동시에'라는 고정 표현입니다."},
+    {ko:"수족관에서의 10년 동안의 힘든 생활 끝에...",sent:"After 10 years ___ hard life in an aquarium...",opts:["of","for","with","about"],ans:0,expl:"years of: '~의 년간'처럼 명사 뒤에 of를 써서 내용을 구체화합니다."},
+    {ko:"나는 소리치며 그들에게 작별의 손을 흔들었습니다.",sent:"I shouted and waved ___ to them.",opts:["bye","farewell","goodbye","hello"],ans:2,expl:"wave goodbye to: '~에게 작별의 손을 흔들다'는 고정 표현입니다."},
+    {ko:"많은 돌고래가 병들거나 심지어 죽기도 합니다.",sent:"Many dolphins get sick ___ even die.",opts:["and","or","but","nor"],ans:1,expl:"or는 두 가지 가능성을 연결합니다. get sick or die = 병들거나 죽다"},
+    {ko:"돌고래들이 위험에 처해 있습니다.",sent:"The dolphins are ___ danger.",opts:["on","at","in","with"],ans:2,expl:"in danger: '위험에 처한'이라는 고정 전치사 표현입니다."},
+    {ko:"저는 인터넷을 검색했습니다.",sent:"I searched ___ Internet.",opts:["a","an","the","(없음)"],ans:2,expl:"Internet 앞에는 정관사 the를 씁니다. (the Internet = 인터넷)"},
+    {ko:"해변을 청소하는 것은 중요합니다.",sent:"___ up beaches is important.",opts:["Clean","Cleaned","To cleaning","Cleaning"],ans:3,expl:"동명사(Cleaning up)가 문장의 주어 역할을 합니다. '~하는 것'을 나타냅니다."},
+    {ko:"저는 인터넷을 검색해 Dolphin Lovers를 찾았습니다.",sent:"I ___ the Internet and found Dolphin Lovers.",opts:["searching","search","searched","have search"],ans:2,expl:"and로 연결된 병렬 구조이므로 found와 같은 과거형 searched가 적절합니다."},
+    {ko:"이제 온 바다가 그들의 집입니다.",sent:"Now all ___ sea is their home.",opts:["a","an","the","(없음)"],ans:2,expl:"the sea: 특정한 '바다'를 가리킬 때 정관사 the를 씁니다."},
+    {ko:"저는 돌고래를 볼 기회가 많았습니다.",sent:"I had many chances ___ dolphins.",opts:["see","seeing","to see","saw"],ans:2,expl:"「chances + to부정사」: '~할 기회'를 나타냅니다. chances to see = 볼 기회"},
+    {ko:"많은 돌고래가 플라스틱 쓰레기 때문에 병이 듭니다.",sent:"___ dolphins get sick because of plastic waste.",opts:["Much","Many","A lot","A large"],ans:1,expl:"Many + 복수 가산명사: '많은 ~'을 나타냅니다. Much는 불가산명사에 씁니다."},
+    {ko:"저는 그곳에 참여했습니다.",sent:"I took part ___ it.",opts:["in","at","on","to"],ans:0,expl:"take part in: '~에 참여하다'에서 전치사 in이 필요합니다."},
+    {ko:"저는 오늘 훈련 수업에서 심부름을 했습니다.",sent:"I just ran some ___ in the training class today.",opts:["mistakes","errands","routes","tasks"],ans:1,expl:"run errands: '심부름을 하다'는 고정 표현입니다."},
+    {ko:"생각 끝에, 저는 그곳에 가입했습니다.",sent:"After some thought, I ___ it today.",opts:["join","joining","have join","joined"],ans:3,expl:"과거 시간 표현(today = 그 날)과 함께 과거형 joined가 적절합니다."},
+    {ko:"그러다 저는 많은 돌고래가 위험에 처해 있다는 것을 알게 되었습니다.",sent:"___, I learned that many dolphins are in danger.",opts:["Therefore","After","Then,","However"],ans:2,expl:"Then은 '그러다, 그리고 나서'를 나타내는 부사로 시간 순서를 표현합니다."},
+    {ko:"그것은 세상을 더 좋게 만드는 좋은 방법입니다.",sent:"It is a great way to learn about social issues and ___ the world better.",opts:["do","make","create","build"],ans:1,expl:"make + 목적어 + 형용사: '~을 …하게 만들다'. make the world better = 세상을 더 좋게 만들다"},
+    {ko:"그녀는 Dolphin Lovers의 회원입니다.",sent:"She is also a member ___ Dolphin Lovers.",opts:["in","at","of","for"],ans:2,expl:"member of: '~의 회원/일원'에서 소속을 나타내는 전치사 of가 필요합니다."},
+    {ko:"저는 정말로 그 프로젝트의 일원이 되고 싶었습니다.",sent:"I really wanted to ___ part of the project.",opts:["being","been","be","am"],ans:2,expl:"want to + 동사원형: to 부정사 뒤에는 동사원형이 옵니다."},
+    {ko:"그 기념식은 우리를 꽤 감동하게 만들었습니다.",sent:"The ceremony made us quite ___.",opts:["emotion","emotional","emotionally","emotionless"],ans:1,expl:"make + 목적어 + 형용사(목적격보어): emotional(형용사)이 us의 상태를 나타냅니다."},
+    {ko:"다행히도, 저에게 기회가 왔습니다.",sent:"Luckily, I ___ the chance.",opts:["get","got","getting","gotten"],ans:1,expl:"Luckily와 함께 과거의 사건을 나타내므로 got(get의 과거형)이 적절합니다."},
+    {ko:"이것을 위해, 한라와 올레는 기술을 배울 필요가 있습니다.",sent:"___ this, Halla and Olle need to learn some skills.",opts:["For","About","With","On"],ans:0,expl:"For this: '이것을 위해'라는 전치사 표현입니다."},
+    {ko:"저는 훈련 수업에 참여했습니다.",sent:"I took part in a training class ___ Halla and Olle.",opts:["about","of","for","to"],ans:2,expl:"for는 목적이나 대상을 나타냅니다. a class for Halla and Olle = 한라와 올레를 위한 수업"},
+    {ko:"그들은 야생에서 살아남기 위해 그것들이 필요할 것입니다.",sent:"They will ___ them to survive in the wild.",opts:["want","need","hope","wish"],ans:1,expl:"need + 목적어 + to부정사: '~가 …하도록 필요하다'는 구조입니다."},
+    {ko:"모든 회원들이 그곳에 있었습니다.",sent:"All the members of Dolphin Lovers ___ there.",opts:["was","is","were","are"],ans:2,expl:"members(복수 주어) + were: 주어가 복수이므로 복수 동사 were가 필요합니다."},
+    {ko:"저는 제주도에서 자랐습니다.",sent:"I ___ up in Jeju-do when I was young.",opts:["grew","growed","grow","growing"],ans:0,expl:"grow up의 과거형은 grew up입니다. grow는 불규칙 동사(grow-grew-grown)입니다."},
+    {ko:"많은 돌고래들이 위험에 처해 있습니다.",sent:"There are many dolphins ___ danger.",opts:["on","at","in","by"],ans:2,expl:"in danger: '위험에 처한'이라는 고정 전치사 표현입니다."},
+    {ko:"저는 Dolphin Lovers를 발견했습니다.",sent:"I found an NGO ___ 'Dolphin Lovers'.",opts:["named","naming","name","names"],ans:0,expl:"named는 과거분사로 앞의 명사를 수식합니다. an NGO named = ~라는 이름의 NGO"},
+    {ko:"해변 정화는 중요합니다.",sent:"Cleaning up beaches is ___ because dolphins get sick.",opts:["important","importantly","importance","more important"],ans:0,expl:"is 뒤에 주격보어로 형용사 important가 옵니다."},
+    {ko:"저는 훈련 수업에서 심부름만 했을 뿐이지만, 경험은 설레게 했습니다.",sent:"I just ran some errands today, ___ the experience made me excited.",opts:["so","and","but","because"],ans:2,expl:"앞(심부름만 했다)과 뒤(경험이 설렜다)가 대조되므로 역접 접속사 but이 적절합니다."},
+    {ko:"생각 끝에, 저는 그곳에 가입했습니다.",sent:"I joined the NGO ___ some thought.",opts:["by","with","after","before"],ans:2,expl:"after some thought: '어느 정도 생각한 후에'라는 고정 표현입니다."},
+    {ko:"돌고래들은 바다로 돌아가기 전에 몇 가지 기술을 배울 필요가 있습니다.",sent:"The dolphins need to ___ some skills before returning to the sea.",opts:["learn","learning","learned","learns"],ans:0,expl:"need to + 동사원형: to 부정사 뒤에는 항상 동사원형이 옵니다."},
+    {ko:"오늘 해변 정화 파티가 있었습니다.",sent:"___ a beach cleanup party today.",opts:["There is","There was","It was","It is"],ans:1,expl:"There was + 단수명사: '~이 있었다'의 과거 표현입니다."},
+    {ko:"돌고래들은 야생에서 살아남기 위해 기술들이 필요할 것입니다.",sent:"Halla and Olle will need the skills ___ survive in the wild.",opts:["survive","to survive","surviving","survived"],ans:1,expl:"to부정사(to survive)는 '~하기 위해'라는 목적을 나타냅니다."},
+    {ko:"저는 돌고래들을 봤을 때 제주도에서 자랐습니다.",sent:"I saw many dolphins ___ I grew up in Jeju-do.",opts:["because","so","when","though"],ans:2,expl:"when: '~할 때'를 나타내는 시간 접속사입니다."},
+    {ko:"그곳은 해변 청소와 같은 다양한 활동을 합니다.",sent:"It does various activities, ___ cleaning up beaches.",opts:["such like","like so","such as","as such"],ans:2,expl:"such as: '~와 같은'을 나타내는 표현으로 예시를 들 때 씁니다."},
+    {ko:"이제 온 바다가 그들의 집입니다.",sent:"Now ___ the sea is their home.",opts:["all of","whole","all","every"],ans:2,expl:"all + the + 명사: '모든, 전체의'를 나타냅니다. all the sea = 온 바다"},
+    {ko:"하지만 저는 동시에 매우 행복했습니다.",sent:"I was very happy ___ the same time.",opts:["in","at","on","for"],ans:1,expl:"at the same time: '동시에'라는 고정 전치사 표현입니다."},
+    {ko:"프로젝트는 돌고래들을 바다로 돌려보내는 것입니다.",sent:"The project was ___ return the dolphins to the sea.",opts:["for","in order","to","about"],ans:2,expl:"be to + 동사원형: '~하는 것이다'를 나타내는 to부정사 보어 구조입니다."},
+    {ko:"많은 돌고래가 인간의 활동 때문에 멸종 위기에 처해 있습니다.",sent:"Many dolphins are ___ because of human activity.",opts:["endanger","endangering","endangered","in endanger"],ans:2,expl:"be endangered: '멸종 위기에 처해 있다'는 수동태 표현입니다. be + 과거분사(p.p.)"},
+    {ko:"저는 훈련 수업에 참석해서 심부름을 했습니다.",sent:"I ___ the training class and ran some errands.",opts:["attend","attended","attending","have attend"],ans:1,expl:"and로 병렬 연결된 ran과 같은 과거형 attended가 필요합니다."},
+    {ko:"해변 청소하는 것은 돌고래에게 중요합니다.",sent:"Cleaning up beaches ___ important for dolphins.",opts:["are","is","were","be"],ans:1,expl:"동명사 주어(Cleaning up beaches)는 단수 취급하므로 is가 적절합니다."},
+    {ko:"저는 그 프로젝트에 참여할 수 있어서 운이 좋았습니다.",sent:"I was ___ to be part of the project.",opts:["lucky","luckily","luck","luckiness"],ans:0,expl:"be 동사의 보어 자리에는 형용사가 옵니다. lucky(형용사) = 운이 좋은"},
+    {ko:"\"자유롭고 행복하게 영원히 살렴!\"",sent:"\"Live freely ___ happily ever after!\"",opts:["but","and","or","so"],ans:1,expl:"freely and happily: 두 부사를 and로 연결합니다."},
+    {ko:"돌고래들이 10년 만에 바다로 돌아갔습니다.",sent:"The dolphins ___ to the sea after 10 years in the aquarium.",opts:["return","returned","have return","returning"],ans:1,expl:"after 10 years(과거 시점)와 함께 과거형 returned가 적절합니다."},
+    {ko:"저는 오늘 훈련 수업에서 심부름을 했습니다.",sent:"I ___ some errands in the training class today.",opts:["run","ran","running","runs"],ans:1,expl:"ran은 run의 과거형입니다. 오늘 한 일(과거)을 나타내므로 과거형이 적절합니다."},
+    {ko:"해변 청소는 쉽지 않았지만, 저는 즐거웠습니다.",sent:"The beach cleanup was not easy, ___ I enjoyed it.",opts:["so","because","but","and"],ans:2,expl:"쉽지 않았지만 즐거웠다 — 앞뒤가 대조되므로 but(역접)이 적절합니다."},
+    {ko:"저는 제가 무언가를 해야 한다고 생각했습니다.",sent:"I thought I should do ___.",opts:["anything","nothing","something","everything"],ans:2,expl:"something은 긍정문에서 '무언가'를 나타냅니다."},
+    {ko:"그 기념식은 우리를 꽤 감동하게 만들었습니다.",sent:"The ceremony made us ___ emotional.",opts:["pretty","very","quite","much"],ans:2,expl:"본문에서 quite(꽤, 상당히)가 사용되었습니다. quite는 형용사나 부사 앞에서 정도를 나타냅니다."},
+    {ko:"저는 많은 돌고래가 위험에 처해 있다는 것을 알았습니다.",sent:"I learned that many dolphins ___ in danger.",opts:["is","was","are","were"],ans:2,expl:"dolphins(복수 주어) + are: 현재 사실(현재에도 위험한 상황)을 나타내므로 are."},
+    {ko:"저는 제주도에서 자랐습니다.",sent:"I grew up ___ Jeju-do.",opts:["at","on","in","by"],ans:2,expl:"도시/섬 이름 앞에는 전치사 in을 씁니다. grow up in Jeju-do = 제주도에서 자라다"},
+    {ko:"그녀는 작별 인사로 손을 흔들었습니다.",sent:"She waved goodbye ___ the dolphins.",opts:["for","at","to","on"],ans:2,expl:"wave goodbye to: '~에게 작별 인사로 손을 흔들다'에서 to는 대상을 나타냅니다."},
+    {ko:"저는 그 프로젝트의 일원이 되고 싶었습니다.",sent:"I wanted to be ___ of the project.",opts:["member","part","side","half"],ans:1,expl:"be part of: '~의 일원이 되다'는 고정 표현입니다."},
+    {ko:"돌고래들은 살아남기 위해 기술이 필요합니다.",sent:"The dolphins will ___ some skills to survive.",opts:["need","want","wish","hope"],ans:0,expl:"need + to부정사 또는 need + 목적어: '~이 필요하다'를 나타냅니다."},
+    {ko:"해변 청소는 쉽지 않았습니다.",sent:"Cleaning up the beach was not ___.",opts:["easy","easily","ease","easing"],ans:0,expl:"was 뒤에 보어 자리에는 형용사가 옵니다. easy(형용사) = 쉬운"},
+    {ko:"저는 인터넷을 검색해 Dolphin Lovers를 찾았습니다.",sent:"I ___ the Internet and found Dolphin Lovers.",opts:["search","searching","searched","have searched"],ans:2,expl:"and로 연결된 found와 시제를 맞춰 과거형 searched가 필요합니다."},
+    {ko:"작은 기념식이 있었고, 모든 회원들이 그곳에 있었습니다.",sent:"There was a ceremony, and all members ___ there.",opts:["was","is","are","were"],ans:3,expl:"all members(복수 주어)에는 복수 동사 were가 필요합니다."},
+    {ko:"돌고래들은 야생에서 살아남기 위해 기술이 필요합니다.",sent:"The dolphins need skills ___ in the wild.",opts:["survive","to survive","surviving","survived"],ans:1,expl:"to부정사(to survive)는 '~하기 위해'라는 목적을 나타냅니다."},
+    {ko:"사실, 저는 약간 울었습니다.",sent:"___ fact, I cried a little.",opts:["On","At","In","By"],ans:2,expl:"In fact: '사실은, 실제로'라는 부사 표현에서 In을 씁니다."},
+    {ko:"이제 더 이상 한라와 올레를 볼 수 없네요!",sent:"Now I cannot see Halla and Olle ___!",opts:["no more","any more","anymore","no longer"],ans:2,expl:"cannot ~ anymore: '더 이상 ~할 수 없다'는 표현입니다."},
+    {ko:"돌고래들이 바다로 돌아갔습니다.",sent:"The dolphins ___ back to the sea.",opts:["go","goes","gone","went"],ans:3,expl:"went는 go의 과거형입니다. 과거에 일어난 사건을 나타냅니다."},
+    {ko:"저는 해변 청소에 참여했습니다.",sent:"I participated ___ the beach cleanup.",opts:["at","in","on","to"],ans:1,expl:"participate in: '~에 참여하다'에서 전치사 in이 필요합니다."},
+    {ko:"수족관에서의 10년 후, 바다가 그들의 집입니다.",sent:"After 10 years ___ an aquarium, the sea is their home.",opts:["in","at","on","by"],ans:0,expl:"in an aquarium: '수족관 안에서'라는 장소 표현입니다."},
+    {ko:"저는 정말로 그 프로젝트의 일원이 되고 싶었습니다.",sent:"I really wanted ___ part of the project.",opts:["being","been","to be","be"],ans:2,expl:"want + to부정사: want 뒤에는 to부정사가 옵니다. wanted to be = 되고 싶었다"},
+    {ko:"Dolphin Lovers의 최근 프로젝트는 돌고래들을 바다로 돌려보내는 것입니다.",sent:"The latest project ___ to return them to the sea.",opts:["are","is","was","were"],ans:1,expl:"project(단수 주어) + is: 현재의 사실을 나타내는 단수 동사입니다."},
+    {ko:"'Dolphin Lovers'는 다양한 활동을 합니다.",sent:"Dolphin Lovers ___ various activities.",opts:["do","does","did","doing"],ans:1,expl:"단체명(Dolphin Lovers)은 단수 취급하므로 does가 적절합니다."},
+    {ko:"저는 오늘 훈련 수업에 참여했습니다.",sent:"I took part in a class ___ two dolphins in an aquarium.",opts:["for","about","of","to"],ans:0,expl:"for: '~을 위한'을 나타내는 전치사입니다. a class for dolphins = 돌고래를 위한 수업"},
+    {ko:"저는 NGO의 회원이 되었다는 것을 알았습니다.",sent:"I learned ___ many dolphins are in danger.",opts:["what","when","that","how"],ans:2,expl:"「learned that + 절」: that이 이끄는 명사절이 목적어로 쓰입니다."},
+    {ko:"\"자유롭고 행복하게 영원히 살렴!\"",sent:"\"Live freely and happily ___ after!\"",opts:["ever","forever","always","never"],ans:0,expl:"ever after: '영원히, 영원토록'이라는 표현입니다. (live happily ever after = 행복하게 영원히 살다)"},
+    {ko:"이제 온 바다가 그들의 집입니다.",sent:"After 10 years of hard life in an aquarium, now ___ the sea is their home.",opts:["some","every","whole","all"],ans:3,expl:"all the sea: '온 바다, 바다 전체'를 나타냅니다."},
+  ],
+  2: [
+    {ko:"문자 메시지를 통해 더 잘 소통하는 방법을 알고 싶나요?",sent:"Do you want to know how you can communicate ___ through texting?",opts:["good","well","better","best"],ans:2,expl:"동사 communicate를 수식하므로 부사가 필요합니다. well의 비교급은 better입니다."},
+    {ko:"Henry의 어머니가 BRT를 올바르게 이해했다고 생각하나요?",sent:"Do you think Henry's mother ___ understood BRT?",opts:["correct","correcting","correctly","more correct"],ans:2,expl:"동사 understood를 수식하므로 부사형이 필요합니다. correct(형용사) → correctly(부사)"},
+    {ko:"그들 중 일부는 그러한 표현의 의미를 모를 수도 있습니다.",sent:"Some of them ___ not know the meanings of such expressions.",opts:["will","shall","may","must"],ans:2,expl:"may not: '~하지 않을 수도 있다'는 불확실한 추측을 나타내는 조동사입니다."},
+    {ko:"우리는 말뿐만 아니라 표정과 몸짓도 사용합니다.",sent:"We use not only words ___ facial expressions and body language.",opts:["but also","and also","as well","moreover"],ans:0,expl:"「not only A but also B」: 'A뿐만 아니라 B도'를 나타내는 상관접속사 구문입니다."},
+    {ko:"때로는 작은 이모티콘 하나가 많은 말보다 더 크게 말할 수 있습니다.",sent:"A little emoji can speak ___ than many words.",opts:["loud","louder","loudly","loudest"],ans:1,expl:"than이 있으므로 비교급이 필요합니다. loud의 비교급은 louder입니다."},
+    {ko:"문제는 모든 사람이 같은 방식으로 이모티콘을 사용하지는 않는다는 것입니다.",sent:"The problem is ___ not everybody uses emojis in the same way.",opts:["which","what","that","how"],ans:2,expl:"「be동사 + that절」: that이 이끄는 명사절이 보어로 쓰인 구조입니다."},
+    {ko:"Amy는 상황을 설명하고 싶었지만, 다시 생각했습니다.",sent:"Amy wanted to explain the situation, ___ she thought again.",opts:["so","and","but","because"],ans:2,expl:"앞뒤 내용이 대조되므로 역접 접속사 but이 적절합니다."},
+    {ko:"이는 문자를 보낼 때 오해가 쉽게 생길 수 있기 때문입니다.",sent:"This is ___ misunderstandings can easily happen when you text.",opts:["why","because","that","what"],ans:1,expl:"「This is because + 절」: '이것은 ~이기 때문이다'를 나타내는 표현입니다."},
+    {ko:"친구들과 민감한 문제에 대해 이야기할 필요가 있나요?",sent:"Do you need to talk ___ sensitive issues with your friends?",opts:["with","for","about","on"],ans:2,expl:"talk about: '~에 대해 이야기하다'는 고정 전치사 표현입니다."},
+    {ko:"어제, Jisu는 남동생에게 생일 선물을 주었습니다.",sent:"Yesterday, Jisu ___ a birthday gift to her little brother Jihoo.",opts:["gives","give","given","gave"],ans:3,expl:"Yesterday(어제)가 있으므로 과거시제가 필요합니다. give의 과거형은 gave입니다."},
+    {ko:"문자 메시지는 요즘 많은 사람들의 주요 소통 수단입니다.",sent:"Texting is the ___ way of communication for many people these days.",opts:["main","mainly","maining","mained"],ans:0,expl:"명사 way를 수식하는 형용사 자리입니다. main(주요한)이 적절합니다."},
+    {ko:"여러분은 누구와 이야기하고 있는지 알아야 합니다.",sent:"You need to ___ who you are talking to.",opts:["knowing","know","known","knew"],ans:1,expl:"need to + 동사원형: to부정사 뒤에는 동사원형이 옵니다."},
+    {ko:"선생님이나 부모님께 문자를 보낼 때 표현에 주의하세요.",sent:"Be ___ with such expressions when you text your teachers.",opts:["care","caring","careful","carefully"],ans:2,expl:"be 동사 뒤 보어 자리에는 형용사가 옵니다. careful(형용사) = 주의 깊은"},
+    {ko:"Henry는 방금 어머니에게 문자 메시지를 보냈습니다.",sent:"Henry ___ the following text message to his mother.",opts:["send","sends","sent","sending"],ans:2,expl:"just(방금)와 함께 과거에 일어난 일이므로 과거형 sent가 적절합니다."},
+    {ko:"Henry: 엄마, 조금만 더 기다려 주세요.",sent:"Mom, I want you to wait just a ___ longer.",opts:["bit","little","few","small"],ans:1,expl:"a little + 비교급: '조금 더 ~한'을 나타냅니다. a little longer = 조금 더 오래"},
+    {ko:"Henry의 어머니가 BRT를 올바르게 이해했다고 생각하나요?",sent:"Do you ___ Henry's mother correctly understood BRT?",opts:["think","thought","thinking","thinks"],ans:0,expl:"Do you + 동사원형: 의문문에서 주어 다음에 동사원형이 옵니다."},
+    {ko:"아마도 그렇지 않을 것입니다.",sent:"Probably ___.",opts:["no","not","never","none"],ans:1,expl:"Probably not: '아마도 그렇지 않다'는 표현입니다. no는 명사/형용사, not은 부사입니다."},
+    {ko:"친구에게 문자를 보낼 때 BRT 같은 표현을 사용할 수 있습니다.",sent:"You can use ___ like BRT, JK, or LOL when you text your friends.",opts:["words","phrases","expressions","sentences"],ans:2,expl:"expressions: '표현, 어구'를 나타냅니다. use expressions = 표현을 사용하다"},
+    {ko:"하지만, 선생님이나 부모님께 문자를 보낼 때는 주의하세요.",sent:"___, be careful with such expressions when you text your teachers.",opts:["But","However,","Although","Despite"],ans:1,expl:"However(하지만)는 앞 내용과 대조되는 내용을 연결하는 접속 부사입니다."},
+    {ko:"그들 중 일부는 그런 표현의 의미를 모를 수도 있다는 것을 이해해야 합니다.",sent:"You need to understand ___ some of them may not know the meanings.",opts:["what","how","that","which"],ans:2,expl:"「understand that + 절」: that이 이끄는 명사절이 목적어로 쓰입니다."},
+    {ko:"어제, Jisu는 남동생에게 생일 선물을 주었습니다.",sent:"Yesterday, Jisu gave a birthday gift ___ her little brother.",opts:["for","to","at","on"],ans:1,expl:"give + 직접목적어 + to + 간접목적어: '~에게 주다'에서 to가 필요합니다."},
+    {ko:"나중에, 그녀는 다음과 같은 문자 메시지를 받았습니다.",sent:"Later, she ___ the following text message.",opts:["gets","got","get","getting"],ans:1,expl:"Later(나중에)와 함께 과거에 받은 것을 나타내므로 과거형 got이 적절합니다."},
+    {ko:"문자 메시지에서는 대신 이모티콘을 사용합니다.",sent:"In texting, we use emojis ___.",opts:["instead","however","although","otherwise"],ans:0,expl:"instead: '대신에'를 나타내는 부사입니다. 앞서 언급된 표정/몸짓 대신 이모티콘을 쓴다는 의미."},
+    {ko:"때로는 작은 이모티콘 하나가 많은 말보다 더 크게 말할 수 있습니다.",sent:"Sometimes, a little emoji can speak louder ___ many words.",opts:["as","than","from","with"],ans:1,expl:"비교급 + than: '~보다 더 …한'을 나타냅니다. louder than = ~보다 더 크게"},
+    {ko:"모든 사람이 같은 방식으로 이모티콘을 사용하지는 않습니다.",sent:"The problem is that not ___ uses emojis in the same way.",opts:["anyone","everyone","somebody","everybody"],ans:3,expl:"not everybody: '모든 사람이 ~하는 것은 아니다'는 부분 부정 표현입니다."},
+    {ko:"어떤 사람들은 이모티콘을 많이 사용하고, 어떤 사람들은 그렇지 않습니다.",sent:"Some people like to use ___ a lot, and some don't.",opts:["it","them","they","those"],ans:1,expl:"them은 앞서 언급된 emojis(복수)를 가리키는 대명사입니다."},
+    {ko:"게다가, 같은 이모티콘이 다른 사람들에게 다른 것을 의미할 수 있습니다.",sent:"In ___, the same emojis can mean different things.",opts:["addition","additional","adding","added"],ans:0,expl:"In addition: '게다가, 더불어'를 나타내는 부사 표현입니다."},
+    {ko:"때로는 전화를 받아야 할 필요가 있습니다.",sent:"Sometimes, you need to ___ up the phone.",opts:["pick","picking","picked","picks"],ans:0,expl:"need to + 동사원형: '~해야 한다'. pick up the phone = 전화를 받다"},
+    {ko:"Nari: 정말로 내 뒷담화를 했어?",sent:"Nari: Did you really talk ___ my back?",opts:["after","behind","beside","around"],ans:1,expl:"talk behind one's back: '~의 뒷담화를 하다'는 고정 표현입니다."},
+    {ko:"Amy는 Nari에게 문자를 보내 상황을 설명하고 싶었습니다.",sent:"Amy wanted to text Nari and ___ the situation.",opts:["explain","explaining","to explain","explained"],ans:0,expl:"to text와 and로 연결된 병렬 구조이므로 동사원형 explain이 필요합니다."},
+    {ko:"\"글쎄, 이건 문자로는 너무 많은 내용이야.\"",sent:"\"Well, this is too ___ for a text,\" she said.",opts:["many","much","more","most"],ans:1,expl:"too much: '너무 많다'에서 much는 불가산 명사나 형용사와 함께 씁니다. too much for = ~하기에 너무 많은"},
+    {ko:"문자 메시지는 가벼운 상황에서는 괜찮습니다.",sent:"Texting is ___ for casual situations.",opts:["okay","okaying","okayed","okays"],ans:0,expl:"be 동사의 보어 자리에는 형용사/부사가 옵니다. okay(괜찮은)가 적절합니다."},
+    {ko:"여기 몇 가지 유용한 팁이 있습니다.",sent:"___ are some useful tips.",opts:["These","Here","There","Those"],ans:1,expl:"Here are: '여기에 ~이 있다'를 나타내는 표현입니다."},
+    {ko:"문자 메시지는 요즘 많은 사람들의 주요 소통 수단입니다.",sent:"Texting is the main ___ of communication for many people.",opts:["type","kind","way","method"],ans:2,expl:"way of communication: '소통 방법'이라는 표현에서 way가 사용됩니다."},
+    {ko:"문자 메시지를 통해 더 잘 소통하는 방법을 알고 싶나요?",sent:"Do you want ___ how you can communicate better?",opts:["know","to know","knowing","known"],ans:1,expl:"want + to부정사: '~하고 싶다'. want to know = 알고 싶다"},
+    {ko:"Henry의 어머니는 아마도 BRT를 이해하지 못했을 것입니다.",sent:"Henry's mother probably ___ understand BRT.",opts:["didn't","don't","doesn't","hasn't"],ans:0,expl:"과거의 일이므로 과거 부정형 didn't가 필요합니다."},
+    {ko:"친구에게 문자를 보낼 때 BRT 같은 표현을 사용할 수 있습니다.",sent:"You can use expressions ___ BRT, JK, or LOL.",opts:["like","such as","as like","so as"],ans:0,expl:"like: '~와 같은'을 나타내는 전치사로 예시를 들 때 씁니다."},
+    {ko:"이는 문자를 보낼 때 오해가 쉽게 생길 수 있기 때문입니다.",sent:"Misunderstandings can ___ happen when you text.",opts:["easy","easier","easily","easiest"],ans:2,expl:"동사 happen을 수식하므로 부사 easily가 필요합니다. easy(형용사) → easily(부사)"},
+    {ko:"친구들과 민감한 문제에 대해 이야기할 필요가 있나요?",sent:"Do you need to talk about ___ issues with your friends?",opts:["sense","sensitive","sensible","sensibly"],ans:1,expl:"issues를 수식하는 형용사 자리입니다. sensitive(민감한)가 적절합니다."},
+    {ko:"대신 전화하세요.",sent:"___ them instead.",opts:["Call","Calling","To call","Called"],ans:0,expl:"명령문은 동사원형으로 시작합니다. Call them = 그들에게 전화하세요"},
+    {ko:"우리는 말뿐만 아니라 표정도 사용합니다.",sent:"We use not only words ___ facial expressions.",opts:["but also","and also","as well as","moreover"],ans:0,expl:"not only A but also B: 'A뿐만 아니라 B도'라는 상관접속사 구문입니다."},
+    {ko:"문자 메시지에서는 표정 대신 이모티콘을 사용합니다.",sent:"In texting, we use emojis ___ of facial expressions.",opts:["rather","instead","other","else"],ans:1,expl:"instead of: '~ 대신에'라는 전치사 표현입니다."},
+    {ko:"게다가, 같은 이모티콘이 다른 사람들에게 다른 것을 의미할 수 있습니다.",sent:"In addition, ___ emojis can mean different things.",opts:["a same","the same","same","an same"],ans:1,expl:"the same: '같은'을 나타낼 때 정관사 the와 함께 씁니다."},
+    {ko:"그녀는 혼잣말을 했습니다.",sent:"She said to ___.",opts:["herself","her","hers","she"],ans:0,expl:"say to oneself: '혼잣말을 하다'. herself는 she의 재귀대명사입니다."},
+    {ko:"Nari는 Amy가 사과해 주기를 원했습니다.",sent:"Nari ___ Amy to apologize to her.",opts:["want","wanted","wanting","wants"],ans:1,expl:"과거의 상황을 나타내므로 과거형 wanted가 적절합니다."},
+    {ko:"Amy는 문자 대신 전화를 했습니다.",sent:"Amy called Nari ___ of texting.",opts:["instead","rather","other","else"],ans:0,expl:"instead of + 동명사: '~하는 대신에'. instead of texting = 문자 대신"},
+    {ko:"이는 문자를 보낼 때 오해가 쉽게 생길 수 있기 때문입니다.",sent:"This is because misunderstandings can ___ happen.",opts:["easy","easier","easily","ease"],ans:2,expl:"동사 happen을 수식하는 부사 자리입니다. easily(쉽게)가 적절합니다."},
+    {ko:"친구들과 민감한 문제에 대해 이야기할 필요가 있나요?",sent:"Do you need to ___ about sensitive issues?",opts:["talk","talking","talked","talks"],ans:0,expl:"need to + 동사원형: to부정사 뒤에는 동사원형이 옵니다."},
+    {ko:"그렇다면 문자를 보내지 마세요.",sent:"___, don't text them.",opts:["So","Then","But","Although"],ans:1,expl:"Then(그렇다면, 그러면)은 앞의 조건에 따른 결론을 나타냅니다."},
+    {ko:"사람들이 이모티콘을 다르게 사용한다는 것을 이해해야 합니다.",sent:"You need to ___ that people use emojis differently.",opts:["understanding","understood","understand","understands"],ans:2,expl:"need to + 동사원형: to부정사 뒤에는 동사원형이 옵니다."},
+    {ko:"문자 메시지는 요즘 많은 사람들의 주요 소통 수단입니다.",sent:"Texting is the main way of communication ___ many people these days.",opts:["to","with","for","of"],ans:2,expl:"for many people: '많은 사람들에게'에서 for는 대상/목적을 나타냅니다."},
+    {ko:"Henry는 방금 어머니에게 다음과 같은 문자 메시지를 보냈습니다.",sent:"Henry just ___ the following text message.",opts:["send","sends","sended","sent"],ans:3,expl:"just(방금)와 함께 과거에 일어난 일을 나타내므로 과거형 sent가 적절합니다."},
+    {ko:"Henry: 엄마, 조금만 더 기다려 주세요.",sent:"Mom, I want you ___ just a little longer.",opts:["wait","to wait","waiting","waited"],ans:1,expl:"want + 목적어 + to부정사: '~가 …하기를 원하다'. want you to wait = 당신이 기다려 주기를 원하다"},
+    {ko:"Nari는 Amy가 사과해 주기를 원했습니다.",sent:"I want you to ___ to me.",opts:["apologize","apologizing","apologized","apology"],ans:0,expl:"want + 목적어 + to + 동사원형: to 뒤에는 동사원형이 옵니다."},
+    {ko:"누군가와 이야기할 때, 우리는 표정을 사용합니다.",sent:"When we ___ with someone, we use facial expressions.",opts:["talk","talks","talking","talked"],ans:0,expl:"When we talk: 시간 부사절에서 현재시제로 일반적 사실을 나타냅니다."},
+    {ko:"이모티콘이 많은 말보다 더 크게 말할 수 있습니다.",sent:"Emojis can ___ louder than words.",opts:["say","speak","talk","tell"],ans:1,expl:"본문에서 speak가 사용되었습니다. speak louder = 더 크게 말하다"},
+    {ko:"어떤 사람들은 이모티콘을 많이 사용하고, 어떤 사람들은 그렇지 않습니다.",sent:"Some people like to use emojis a lot, and ___ don't.",opts:["other","others","some","another"],ans:2,expl:"some A, some B: 'A도 있고, B도 있다'는 대조 표현입니다."},
+    {ko:"게다가, 같은 이모티콘이 다른 의미를 가질 수 있습니다.",sent:"In addition, ___ emojis can mean different things to different people.",opts:["same","a same","the same","some same"],ans:2,expl:"the same: '같은'을 나타낼 때 정관사 the와 함께 씁니다."},
+    {ko:"Amy는 \"이건 문자로 하기엔 너무 많다\"고 혼잣말을 했습니다.",sent:"She said to herself and ___ Nari.",opts:["calls","called","calling","call"],ans:1,expl:"said(과거형)와 병렬 구조이므로 같은 과거형 called가 적절합니다."},
+    {ko:"Amy는 다시 생각하고 Nari에게 전화했습니다.",sent:"Amy ___ again before calling Nari.",opts:["think","thought","thinking","thinks"],ans:1,expl:"과거에 일어난 일이므로 과거형 thought(think의 과거형)가 적절합니다."},
+    {ko:"문자 메시지는 가벼운 상황에서는 괜찮습니다.",sent:"Texting is okay for ___ situations.",opts:["formal","casual","serious","sensitive"],ans:1,expl:"casual: '가벼운, 격식 없는'을 나타냅니다. casual situations = 가벼운 상황"},
+    {ko:"이모티콘 하나가 많은 말을 할 수 있습니다.",sent:"Sometimes, a little emoji ___ speak louder than many words.",opts:["will","should","can","must"],ans:2,expl:"can: '~할 수 있다'는 가능성을 나타냅니다. can speak = 말할 수 있다"},
+    {ko:"모든 사람이 같은 방식으로 이모티콘을 사용하지는 않습니다.",sent:"Not ___ uses emojis in the same way.",opts:["anyone","somebody","everybody","nobody"],ans:2,expl:"not everybody: '모든 사람이 ~한 것은 아니다'는 부분 부정 표현입니다."},
+    {ko:"문제는 사람마다 이모티콘 사용 방식이 다르다는 것입니다.",sent:"The ___ is that people use emojis differently.",opts:["issue","problem","matter","point"],ans:1,expl:"본문에서 problem이 사용되었습니다. The problem is that = 문제는 ~라는 것이다"},
+    {ko:"문자 메시지에서는 이모티콘을 대신 사용합니다.",sent:"We use emojis ___ of words.",opts:["beside","other","instead","rather"],ans:2,expl:"instead of: '~ 대신에'라는 전치사 표현입니다."},
+    {ko:"사람들이 이모티콘을 다르게 사용한다는 것을 이해해야 합니다.",sent:"You need to understand ___ people use emojis differently.",opts:["what","how","that","which"],ans:2,expl:"「understand that + 절」: that이 이끄는 명사절이 목적어로 쓰입니다."},
+    {ko:"이모티콘이 많은 말을 할 수 있습니다.",sent:"A little emoji can ___ a lot.",opts:["say","speak","talk","express"],ans:1,expl:"본문에서 speak이 사용되었습니다. speak louder than words = 말보다 더 크게 말하다"},
+    {ko:"게다가, 같은 이모티콘이 다른 사람들에게 다른 것을 의미할 수 있습니다.",sent:"In addition, the same emojis can mean ___ things to different people.",opts:["another","other","different","various"],ans:2,expl:"different things: '다른 것들'을 나타냅니다. different = 서로 다른"},
+    {ko:"Amy는 \"이건 문자로 하기엔 너무 많다\"고 말했습니다.",sent:"Amy said, \"Well, this is too much ___ a text.\"",opts:["to","for","of","with"],ans:1,expl:"too ~ for: '~하기에 너무 …한'을 나타냅니다. too much for a text = 문자로 하기엔 너무 많은"},
+    {ko:"이는 문자를 보낼 때 오해가 쉽게 생길 수 있기 때문입니다.",sent:"___ misunderstandings can easily happen when you text.",opts:["That's why","This is because","The reason","Because"],ans:1,expl:"This is because: '이것은 ~ 때문이다'를 나타냅니다."},
+    {ko:"친구들과 민감한 문제에 대해 이야기할 필요가 있나요?",sent:"Do you need to talk about ___ issues?",opts:["sensible","sensitive","sense","sensory"],ans:1,expl:"sensitive issues: '민감한 문제들'을 나타냅니다. sensitive = 민감한"},
+    {ko:"Nari는 Amy가 사과해 주기를 원했습니다.",sent:"Nari wanted Amy ___ apologize.",opts:["apologize","to apologize","apologizing","apologized"],ans:1,expl:"want + 목적어 + to부정사: Amy가 사과하기를 원했다."},
+    {ko:"대신 전화하세요.",sent:"Call them ___ of texting.",opts:["instead","rather","other","rather than"],ans:0,expl:"instead of + 동명사: '~하는 대신에'. instead of texting = 문자하는 대신"},
+    {ko:"문자 메시지는 요즘 주요 소통 수단입니다.",sent:"Texting is the main way ___ communication.",opts:["of","for","at","in"],ans:0,expl:"way of communication: '소통 방법'에서 내용을 나타내는 of가 필요합니다."},
+    {ko:"여러분은 누구와 이야기하고 있는지 알아야 합니다.",sent:"You need to know ___ you are talking to.",opts:["what","who","when","where"],ans:1,expl:"who: '누구'를 나타내는 의문사로 간접의문문에 쓰입니다."},
+    {ko:"BRT는 '금방 거기 갈게'를 뜻합니다.",sent:"BRT stands for \"be ___ there.\"",opts:["right","round","ready","really"],ans:0,expl:"BRT = Be Right There (금방 거기 갈게)"},
+    {ko:"JK는 '농담이야'를 뜻합니다.",sent:"JK stands for \"just ___\".",opts:["known","kidding","keeping","kind"],ans:1,expl:"JK = Just Kidding (농담이야)"},
+    {ko:"LOL은 '크게 웃다'를 뜻합니다.",sent:"LOL stands for \"laughing ___ loud\".",opts:["over","out","onto","off"],ans:1,expl:"LOL = Laughing Out Loud (소리 내어 크게 웃다)"},
+    {ko:"Jisu는 Jihoo가 선물을 마음에 들어 하지 않는다고 생각했습니다.",sent:"Jisu thought Jihoo ___ like her gift.",opts:["doesn't","didn't","won't","hadn't"],ans:1,expl:"thought(과거)와 시제를 맞춰 과거형 didn't가 필요합니다."},
+    {ko:"우리는 말만 사용하는 것이 아닙니다.",sent:"When we talk with someone, we use ___ only words.",opts:["no","not","never","none"],ans:1,expl:"not only: 'not only A but also B' 구문의 일부입니다. not만으로도 부정을 나타냅니다."},
+    {ko:"문자 메시지에서는 표정 대신 이모티콘을 사용합니다.",sent:"In texting, we use emojis ___ of words.",opts:["beside","other","instead","rather"],ans:2,expl:"instead of: '~ 대신에'를 나타내는 전치사 표현입니다."},
+    {ko:"때로는 전화를 받아야 할 필요가 있습니다.",sent:"Sometimes you need to pick ___ the phone.",opts:["on","up","at","off"],ans:1,expl:"pick up: '(전화를) 받다'는 구동사입니다. pick up the phone = 전화를 받다"},
+    {ko:"때로는 전화를 받아야 할 필요가 있습니다.",sent:"___ you need to pick up the phone.",opts:["Sometimes","Sometime","Some time","Some times"],ans:0,expl:"Sometimes: '때로는, 가끔'을 나타내는 빈도 부사입니다."},
+    {ko:"Nari: 정말로 내 뒷담화를 했어?",sent:"Nari: Did you ___ talk behind my back?",opts:["truly","real","really","actual"],ans:2,expl:"동사 talk를 수식하는 부사 자리입니다. really(정말로)가 적절합니다."},
+    {ko:"Amy는 Nari에게 상황을 설명하고 싶었습니다.",sent:"Amy wanted to ___ the situation to Nari.",opts:["describe","explain","tell","say"],ans:1,expl:"explain the situation: '상황을 설명하다'는 표현입니다."},
+    {ko:"문자 메시지는 가벼운 상황에서는 괜찮습니다.",sent:"Texting is okay for ___ situations.",opts:["formal","casual","serious","tense"],ans:1,expl:"casual situations: '가벼운, 격식 없는 상황'을 나타냅니다."},
+    {ko:"이는 문자를 보낼 때 오해가 쉽게 생길 수 있기 때문입니다.",sent:"This is because misunderstandings can ___ happen when you text.",opts:["easy","easily","easier","most easily"],ans:1,expl:"동사 happen을 수식하는 부사 easily(쉽게)가 필요합니다."},
+    {ko:"대신 전화하세요.",sent:"___ them instead of texting.",opts:["Call","Calling","Called","To call"],ans:0,expl:"명령문은 동사원형으로 시작합니다. Call = 전화하세요"},
+    {ko:"사람들은 이모티콘을 다양한 방식으로 사용합니다.",sent:"People use emojis in ___ ways.",opts:["different","differently","difference","differing"],ans:0,expl:"명사 ways를 수식하는 형용사 자리입니다. different(다양한, 서로 다른)가 적절합니다."},
+    {ko:"게다가, 같은 이모티콘이 다른 의미를 가질 수 있습니다.",sent:"In addition, ___ emojis can mean different things.",opts:["same","a same","the same","some same"],ans:2,expl:"the same: 정관사 the와 함께 '같은'을 나타냅니다."},
+    {ko:"Amy는 다시 생각했습니다.",sent:"Amy ___ again before calling Nari.",opts:["think","thought","thinking","thinks"],ans:1,expl:"과거에 일어난 일이므로 과거형 thought가 적절합니다."},
+    {ko:"문제는 모든 사람이 같은 방식으로 이모티콘을 사용하지는 않는다는 것입니다.",sent:"The problem is ___ not everybody uses emojis the same way.",opts:["which","what","who","that"],ans:3,expl:"「be동사 + that절」: that이 이끄는 명사절이 보어로 쓰인 구조입니다."},
+    {ko:"때로는 전화를 받아야 할 필요가 있습니다.",sent:"Texting is okay, but sometimes you need to ___ up the phone.",opts:["pick","picking","picked","picks"],ans:0,expl:"need to + 동사원형: to부정사 뒤에는 동사원형이 옵니다."},
+  ]
+};
+
+// ===================================================================
+// STATE  (word order questions)
+// ===================================================================
+const wState = {};   // key: "u-qi"  →  { tokens, bank, selected }
+const gState = {};   // key: "u-gi"  →  { chosen: number | null, checked: bool }
+
+function initWordState(u, qi) {
+  const words = wordData[u][qi].words.split(' / ');
+  const tokens = words.map((text, id) => ({ id, text }));
+  const bank = shuffle(tokens.map(t => t.id));
+  wState[`${u}-${qi}`] = { tokens, bank, selected: [] };
+}
+
+function initGrammarState(u, gi) {
+  gState[`${u}-${gi}`] = { chosen: null, checked: false };
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ===================================================================
+// RENDER — WORD ORDER
+// ===================================================================
+function renderWordSection(u) {
+  const el = document.getElementById(`u${u}-order`);
+  const total = wordData[u].length;
+
+  let html = `
+    <div class="controls">
+      <button class="btn btn-pri"  onclick="checkAllWord(${u})">전체 채점</button>
+      <button class="btn btn-warn" onclick="revealAllWord(${u})">정답 모두 보기</button>
+      <button class="btn btn-sec"  onclick="resetAllWord(${u})">초기화</button>
+    </div>
+    <div id="wscore${u}" class="score-box"></div>
+  `;
+
+  for (let qi = 0; qi < total; qi++) {
+    initWordState(u, qi);
+    const q = wordData[u][qi];
+    const isTitle = q.num === 'Title';
+    html += `
+      <div class="wcard${isTitle ? ' title-card' : ''}" id="wcard-${u}-${qi}">
+        <div class="q-num">[${q.num}]</div>
+        <div class="q-ko">${q.ko}</div>
+        <div class="area-label">단어 뱅크 (클릭하여 선택)</div>
+        <div class="word-bank"  id="bank-${u}-${qi}"></div>
+        <div class="area-label">내 답안 (클릭하면 취소)</div>
+        <div class="answer-area" id="ans-${u}-${qi}">
+          <span class="placeholder">단어를 클릭하여 여기에 채워보세요</span>
+        </div>
+        <div class="card-btns">
+          <button class="chk-btn" onclick="checkWordQ(${u},${qi})">확인</button>
+          <button class="clr-btn" onclick="clearWordQ(${u},${qi})">초기화</button>
+        </div>
+        <div class="w-feedback" id="wfb-${u}-${qi}"></div>
+        <div class="w-reveal"   id="wrev-${u}-${qi}">정답: ${q.answer}</div>
+      </div>
+    `;
+  }
+  el.innerHTML = html;
+
+  // draw initial chips
+  for (let qi = 0; qi < total; qi++) drawWordChips(u, qi);
+}
+
+function drawWordChips(u, qi) {
+  const s = wState[`${u}-${qi}`];
+
+  // bank
+  const bankEl = document.getElementById(`bank-${u}-${qi}`);
+  bankEl.innerHTML = s.bank.length
+    ? s.bank.map(id =>
+        `<button class="chip bank-chip" onclick="selectChip(${u},${qi},${id})">${esc(s.tokens[id].text)}</button>`
+      ).join('')
+    : '<span style="color:#9ca3af;font-size:.83rem;padding:4px 6px">모든 단어를 사용했습니다</span>';
+
+  // answer
+  const ansEl = document.getElementById(`ans-${u}-${qi}`);
+  if (s.selected.length === 0) {
+    ansEl.innerHTML = '<span class="placeholder">단어를 클릭하여 여기에 채워보세요</span>';
+    ansEl.className = 'answer-area';
+  } else {
+    ansEl.innerHTML = s.selected.map(id =>
+      `<button class="chip ans-chip" onclick="deselectChip(${u},${qi},${id})">${esc(s.tokens[id].text)}</button>`
+    ).join('');
+    ansEl.className = 'answer-area filled';
+  }
+}
+
+function selectChip(u, qi, id) {
+  const s = wState[`${u}-${qi}`];
+  s.bank = s.bank.filter(x => x !== id);
+  s.selected.push(id);
+  drawWordChips(u, qi);
+  // clear feedback
+  document.getElementById(`wfb-${u}-${qi}`).className = 'w-feedback';
+  document.getElementById(`wfb-${u}-${qi}`).textContent = '';
+  document.getElementById(`ans-${u}-${qi}`).classList.remove('correct','wrong');
+}
+
+function deselectChip(u, qi, id) {
+  const s = wState[`${u}-${qi}`];
+  s.selected = s.selected.filter(x => x !== id);
+  s.bank.push(id);
+  drawWordChips(u, qi);
+  document.getElementById(`wfb-${u}-${qi}`).className = 'w-feedback';
+  document.getElementById(`ans-${u}-${qi}`).classList.remove('correct','wrong');
+}
+
+function checkWordQ(u, qi) {
+  const s   = wState[`${u}-${qi}`];
+  const fb  = document.getElementById(`wfb-${u}-${qi}`);
+  const ans = document.getElementById(`ans-${u}-${qi}`);
+  if (!s.selected.length) return;
+  const given   = s.selected.map(id => s.tokens[id].text).join(' ');
+  const correct = wordData[u][qi].answer;
+  if (norm(given) === norm(correct)) {
+    fb.className = 'w-feedback ok';
+    fb.textContent = '정답입니다!';
+    ans.classList.remove('wrong'); ans.classList.add('correct');
+  } else {
+    fb.className = 'w-feedback err';
+    fb.textContent = '다시 확인해 보세요.';
+    ans.classList.remove('correct'); ans.classList.add('wrong');
+  }
+}
+
+function clearWordQ(u, qi) {
+  initWordState(u, qi);
+  drawWordChips(u, qi);
+  document.getElementById(`wfb-${u}-${qi}`).className = 'w-feedback';
+  document.getElementById(`wfb-${u}-${qi}`).textContent = '';
+  document.getElementById(`ans-${u}-${qi}`).classList.remove('correct','wrong','filled');
+  document.getElementById(`wrev-${u}-${qi}`).classList.remove('show');
+}
+
+function checkAllWord(u) {
+  const total = wordData[u].length;
+  let correct = 0, answered = 0;
+  for (let qi = 0; qi < total; qi++) {
+    const s = wState[`${u}-${qi}`];
+    if (s.selected.length) {
+      answered++;
+      checkWordQ(u, qi);
+      const given = s.selected.map(id => s.tokens[id].text).join(' ');
+      if (norm(given) === norm(wordData[u][qi].answer)) correct++;
+    }
+  }
+  const box = document.getElementById(`wscore${u}`);
+  box.style.display = 'block';
+  box.innerHTML = answered === 0
+    ? '아직 입력한 답이 없습니다.'
+    : `채점 결과: <span>${correct} / ${answered}</span>문제 정답 (전체 ${total}문제)`;
+}
+
+function revealAllWord(u) {
+  for (let qi = 0; qi < wordData[u].length; qi++)
+    document.getElementById(`wrev-${u}-${qi}`).classList.add('show');
+}
+
+function resetAllWord(u) {
+  for (let qi = 0; qi < wordData[u].length; qi++) clearWordQ(u, qi);
+  const box = document.getElementById(`wscore${u}`);
+  box.style.display = 'none';
+}
+
+// ===================================================================
+// RENDER — GRAMMAR
+// ===================================================================
+function renderGrammarSection(u) {
+  const el = document.getElementById(`u${u}-grammar`);
+  const qs = grammarData[u];
+
+  let html = `
+    <div class="controls">
+      <button class="btn btn-pri"  onclick="checkAllGrammar(${u})">전체 채점</button>
+      <button class="btn btn-warn" onclick="revealAllGrammar(${u})">해설 모두 보기</button>
+      <button class="btn btn-sec"  onclick="resetAllGrammar(${u})">초기화</button>
+    </div>
+    <div id="gscore${u}" class="score-box"></div>
+  `;
+
+  qs.forEach((q, gi) => {
+    initGrammarState(u, gi);
+    const sentHtml = q.sent.replace('___', '<span class="blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>');
+    const keys = ['A', 'B', 'C', 'D'];
+    const optsHtml = q.opts.map((opt, oi) => `
+      <label class="opt" id="gopt-${u}-${gi}-${oi}" onclick="chooseOpt(${u},${gi},${oi})">
+        <span class="opt-key">${keys[oi]}</span>
+        ${esc(opt)}
+      </label>
+    `).join('');
+
+    html += `
+      <div class="gcard" id="gcard-${u}-${gi}">
+        <div class="g-num">문제 ${gi + 1}</div>
+        <div class="g-ko">${q.ko}</div>
+        <div class="g-sent">${sentHtml}</div>
+        <div class="opts">${optsHtml}</div>
+        <div class="card-btns">
+          <button class="chk-btn" onclick="checkGrammarQ(${u},${gi})">확인</button>
+          <button class="clr-btn" onclick="resetGrammarQ(${u},${gi})">초기화</button>
+        </div>
+        <div class="g-feedback" id="gfb-${u}-${gi}"></div>
+        <div class="g-expl"     id="gexpl-${u}-${gi}">${q.expl}</div>
+      </div>
+    `;
+  });
+
+  el.innerHTML = html;
+}
+
+function chooseOpt(u, gi, oi) {
+  const s = gState[`${u}-${gi}`];
+  if (s.checked) return;
+  s.chosen = oi;
+  const keys = ['A','B','C','D'];
+  grammarData[u][gi].opts.forEach((_, i) => {
+    const lbl = document.getElementById(`gopt-${u}-${gi}-${i}`);
+    lbl.className = 'opt' + (i === oi ? ' sel' : '');
+  });
+}
+
+function checkGrammarQ(u, gi) {
+  const s = gState[`${u}-${gi}`];
+  if (s.chosen === null) return;
+  s.checked = true;
+  const q  = grammarData[u][gi];
+  const fb = document.getElementById(`gfb-${u}-${gi}`);
+  const ex = document.getElementById(`gexpl-${u}-${gi}`);
+  q.opts.forEach((_, i) => {
+    const lbl = document.getElementById(`gopt-${u}-${gi}-${i}`);
+    if (i === q.ans) {
+      lbl.className = 'opt ok-opt';
+    } else if (i === s.chosen && i !== q.ans) {
+      lbl.className = 'opt err-opt';
+    } else {
+      lbl.className = 'opt';
+    }
+  });
+  if (s.chosen === q.ans) {
+    fb.className = 'g-feedback ok';
+    fb.textContent = '정답입니다!';
+  } else {
+    fb.className = 'g-feedback err';
+    fb.textContent = `오답입니다. 정답은 ${['A','B','C','D'][q.ans]}. ${q.opts[q.ans]}`;
+  }
+  ex.classList.add('show');
+}
+
+function resetGrammarQ(u, gi) {
+  initGrammarState(u, gi);
+  grammarData[u][gi].opts.forEach((_, i) => {
+    document.getElementById(`gopt-${u}-${gi}-${i}`).className = 'opt';
+  });
+  const fb = document.getElementById(`gfb-${u}-${gi}`);
+  fb.className = 'g-feedback'; fb.textContent = '';
+  document.getElementById(`gexpl-${u}-${gi}`).classList.remove('show');
+}
+
+function checkAllGrammar(u) {
+  const qs = grammarData[u];
+  let correct = 0, answered = 0;
+  qs.forEach((_, gi) => {
+    const s = gState[`${u}-${gi}`];
+    if (s.chosen !== null) {
+      answered++;
+      checkGrammarQ(u, gi);
+      if (s.chosen === qs[gi].ans) correct++;
+    }
+  });
+  const box = document.getElementById(`gscore${u}`);
+  box.style.display = 'block';
+  box.innerHTML = answered === 0
+    ? '아직 선택한 답이 없습니다.'
+    : `채점 결과: <span>${correct} / ${answered}</span>문제 정답 (전체 ${qs.length}문제)`;
+}
+
+function revealAllGrammar(u) {
+  grammarData[u].forEach((_, gi) => {
+    const s = gState[`${u}-${gi}`];
+    if (!s.checked) {
+      // mark correct answer green without penalizing
+      grammarData[u][gi].opts.forEach((__, i) => {
+        document.getElementById(`gopt-${u}-${gi}-${i}`).className =
+          i === grammarData[u][gi].ans ? 'opt ok-opt' : 'opt';
+      });
+    }
+    document.getElementById(`gexpl-${u}-${gi}`).classList.add('show');
+  });
+}
+
+function resetAllGrammar(u) {
+  grammarData[u].forEach((_, gi) => resetGrammarQ(u, gi));
+  const box = document.getElementById(`gscore${u}`);
+  box.style.display = 'none';
+}
+
+// ===================================================================
+// TAB SWITCHING
+// ===================================================================
+function switchUnit(u) {
+  document.querySelectorAll('.unit').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.utab').forEach(el => el.classList.remove('active'));
+  document.getElementById(`unit${u}`).classList.add('active');
+  document.querySelectorAll('.utab')[u - 1].classList.add('active');
+}
+
+function switchType(u, type) {
+  ['order','grammar'].forEach(t => {
+    document.getElementById(`u${u}-${t}`).classList.toggle('active', t === type);
+    document.getElementById(`st${u}-${t}`).classList.toggle('active', t === type);
+  });
+}
+
+// ===================================================================
+// HELPERS
+// ===================================================================
+function norm(s) {
+  return s.trim().replace(/\s+/g,' ').toLowerCase().replace(/[""]/g,'"').replace(/['']/g,"'");
+}
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===================================================================
+// INIT
+// ===================================================================
+renderWordSection(1);
+renderWordSection(2);
+renderGrammarSection(1);
+renderGrammarSection(2);
+
+// add stab ids after render
+document.getElementById('st1-order').id   = 'st1-order';
+document.getElementById('st1-grammar').id = 'st1-grammar';
+document.getElementById('st2-order').id   = 'st2-order';
+document.getElementById('st2-grammar').id = 'st2-grammar';
+</script>
+</body>
+</html>
